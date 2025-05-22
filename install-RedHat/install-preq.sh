@@ -42,7 +42,7 @@ if rpm -q rabbitmq-server; then
         echo $RES_RABBITMQ_VERSION
         echo $RES_RABBITMQ_REMINDER
         echo $RES_RABBITMQ_INSTALLATION
-        [ -t 0 ] && read_rabbitmq_update || yum -y install rabbitmq-server
+        read_rabbitmq_update
     fi
 fi
 
