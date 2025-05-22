@@ -38,29 +38,29 @@ jobs:
             os: centos9s
             name: "CentOS 9 Stream"
 
-          - distr: onlyoffice
-            os: debian10
-            name: "Debian 10"
+          # - distr: onlyoffice
+          #   os: debian10
+          #   name: "Debian 10"
 
-          - distr: onlyoffice
-            os: debian11
-            name: "Debian 11"
+          # - distr: onlyoffice
+          #   os: debian11
+          #   name: "Debian 11"
 
-          - distr: onlyoffice
-            os: debian12
-            name: "Debian 12"
+          # - distr: onlyoffice
+          #   os: debian12
+          #   name: "Debian 12"
 
-          - distr: onlyoffice
-            os: ubuntu2004
-            name: "Ubuntu 20.04"
+          # - distr: onlyoffice
+          #   os: ubuntu2004
+          #   name: "Ubuntu 20.04"
 
-          - distr: onlyoffice
-            os: ubuntu2204
-            name: "Ubuntu 22.04"
+          # - distr: onlyoffice
+          #   os: ubuntu2204
+          #   name: "Ubuntu 22.04"
 
-          - distr: onlyoffice
-            os: ubuntu2404
-            name: "Ubuntu 24.04"
+          # - distr: onlyoffice
+          #   os: ubuntu2404
+          #   name: "Ubuntu 24.04"
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
