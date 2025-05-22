@@ -13,50 +13,24 @@ on:
 
   workflow_dispatch:
     inputs:
-      rhel8:
-        type: boolean
-        description: 'RHEL 8'
-        default: true
-      rhel9:
-        type: boolean
-        description: 'RHEL 9'
-        default: true
-      centos8s:
-        type: boolean
-        description: 'CentOS 8 Stream'
-        default: true
-      centos9s:
-        type: boolean
-        description: 'CentOS 9 Stream'
-        default: true
-      amazonlinux2023:
-        type: boolean
-        description: 'Amazon Linux 2023'
-        default: true
-      debian10:
-        type: boolean
-        description: 'Debian 10'
-        default: true
-      debian11:
-        type: boolean
-        description: 'Debian 11'
-        default: true
-      debian12:
-        type: boolean
-        description: 'Debian 12'
-        default: true
-      ubuntu2004:
-        type: boolean
-        description: 'Ubuntu 20.04'
-        default: true
-      ubuntu2204:
-        type: boolean
-        description: 'Ubuntu 22.04'
-        default: true
-      ubuntu2404:
-        type: boolean
-        description: 'Ubuntu 24.04'
-        default: true
+      selected_os:
+        description: 'Select OS to test (or "all" to test all)'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - rhel8
+          - rhel9
+          - centos8s
+          - centos9s
+          - amazonlinux2023
+          - debian10
+          - debian11
+          - debian12
+          - ubuntu2004
+          - ubuntu2204
+          - ubuntu2404
 
 jobs:
   get-version:
@@ -82,24 +56,29 @@ jobs:
       - name: Set matrix
         id: set-matrix
         run: |
-          matrix=$(echo '{
+          selected="${{ github.event.inputs.selected_os || 'all' }}"
+
+          matrix_json='{
             "include": [
-              {"execute": '${{ github.event.inputs.rhel8 || true }}', "name": "RHEL 8", "os": "rhel8", "distr": "generic"},
-              {"execute": '${{ github.event.inputs.rhel9 || true }}', "name": "RHEL 9", "os": "rhel9", "distr": "generic"},
-              {"execute": '${{ github.event.inputs.centos8s || true }}', "name": "CentOS 8 Stream", "os": "base-centos8s", "distr": "onlyoffice"},
-              {"execute": '${{ github.event.inputs.centos9s || true }}', "name": "CentOS 9 Stream", "os": "base-centos9s", "distr": "onlyoffice"},
-              {"execute": '${{ github.event.inputs.amazonlinux2023 || true }}', "name": "Amazon Linux 2023", "os": "amazonlinux-2023", "distr": "bento"},
-              {"execute": '${{ github.event.inputs.debian10 || true }}', "name": "Debian 10", "os": "base-debian10", "distr": "onlyoffice"},
-              {"execute": '${{ github.event.inputs.debian11 || true }}', "name": "Debian 11", "os": "base-debian11", "distr": "onlyoffice"},
-              {"execute": '${{ github.event.inputs.debian12 || true }}', "name": "Debian 12", "os": "base-debian12", "distr": "onlyoffice"},
-              {"execute": '${{ github.event.inputs.ubuntu2004 || true }}', "name": "Ubuntu 20.04", "os": "base-ubuntu2004", "distr": "onlyoffice"},
-              {"execute": '${{ github.event.inputs.ubuntu2204 || true }}', "name": "Ubuntu 22.04", "os": "base-ubuntu2204", "distr": "onlyoffice"},
-              {"execute": '${{ github.event.inputs.ubuntu2404 || true }}', "name": "Ubuntu 24.04", "os": "base-ubuntu2404", "distr": "onlyoffice"}
+              {"name": "RHEL 8", "os": "rhel8", "distr": "generic"},
+              {"name": "RHEL 9", "os": "rhel9", "distr": "generic"},
+              {"name": "CentOS 8 Stream", "os": "centos8s", "distr": "onlyoffice"},
+              {"name": "CentOS 9 Stream", "os": "centos9s", "distr": "onlyoffice"},
+              {"name": "Amazon Linux 2023", "os": "amazonlinux2023", "distr": "bento"},
+              {"name": "Debian 10", "os": "debian10", "distr": "onlyoffice"},
+              {"name": "Debian 11", "os": "debian11", "distr": "onlyoffice"},
+              {"name": "Debian 12", "os": "debian12", "distr": "onlyoffice"},
+              {"name": "Ubuntu 20.04", "os": "ubuntu2004", "distr": "onlyoffice"},
+              {"name": "Ubuntu 22.04", "os": "ubuntu2204", "distr": "onlyoffice"},
+              {"name": "Ubuntu 24.04", "os": "ubuntu2404", "distr": "onlyoffice"}
             ]
+          }'
+
+          filtered=$(echo "$matrix_json" | jq -c --arg sel "$selected" '{
+            include: [.include[] | select($sel == "all" or .os == $sel)]
           }')
 
-          matrix=$(jq -c '{include: [.include[] | select(.execute)]}' <<< "$matrix")
-          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+          echo "matrix=$filtered" >> "$GITHUB_OUTPUT"
 
   vagrant-up:
     name: "Test Docs with ${{ matrix.name }}"
@@ -107,7 +86,7 @@ jobs:
     needs: [get-version, prepare]
     strategy:
       fail-fast: false
-      matrix: ${{fromJSON(needs.prepare.outputs.matrix)}}
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     env:
       VER: ${{ needs.get-version.outputs.ds-ver }}
     steps:
