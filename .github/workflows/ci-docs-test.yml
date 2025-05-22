@@ -8,10 +8,55 @@ on:
       - 'develop'
       - 'master'
 
-  workflow_dispatch:
-
   schedule:
     - cron: '0 21 * * 0'
+
+  workflow_dispatch:
+    inputs:
+      rhel8:
+        type: boolean
+        description: 'RHEL 8'
+        default: true
+      rhel9:
+        type: boolean
+        description: 'RHEL 9'
+        default: true
+      centos8s:
+        type: boolean
+        description: 'CentOS 8 Stream'
+        default: true
+      centos9s:
+        type: boolean
+        description: 'CentOS 9 Stream'
+        default: true
+      amazonlinux2023:
+        type: boolean
+        description: 'Amazon Linux 2023'
+        default: true
+      debian10:
+        type: boolean
+        description: 'Debian 10'
+        default: true
+      debian11:
+        type: boolean
+        description: 'Debian 11'
+        default: true
+      debian12:
+        type: boolean
+        description: 'Debian 12'
+        default: true
+      ubuntu2004:
+        type: boolean
+        description: 'Ubuntu 20.04'
+        default: true
+      ubuntu2204:
+        type: boolean
+        description: 'Ubuntu 22.04'
+        default: true
+      ubuntu2404:
+        type: boolean
+        description: 'Ubuntu 24.04'
+        default: true
 
 jobs:
   get-version:
@@ -20,131 +65,116 @@ jobs:
     outputs:
       ds-ver: ${{ steps.get-version.outputs.ds-ver }}
     steps:
-    - name: get-version
-      id: get-version
-      shell: bash
-      run: |
-        VERSION=$(curl -sL -H "Accept: application/vnd.github+json" https://api.github.com/repos/ONLYOFFICE/document-server-package/branches \
-          | jq -r '.[] | select(.name|test("^(release|hotfix)/")) | .name' | sort -Vr | head -n1 | awk -F '/' '{print $2}' | sed 's/^v//')
-        echo "ds-ver=${VERSION:-99.99.99}" >> "$GITHUB_OUTPUT"
+      - name: Get latest DS version
+        id: get-version
+        shell: bash
+        run: |
+          VERSION=$(curl -sL -H "Accept: application/vnd.github+json" https://api.github.com/repos/ONLYOFFICE/document-server-package/branches \
+            | jq -r '.[] | select(.name|test("^(release|hotfix)/")) | .name' | sort -Vr | head -n1 | awk -F '/' '{print $2}' | sed 's/^v//')
+          echo "ds-ver=${VERSION:-99.99.99}" >> "$GITHUB_OUTPUT"
+
+  prepare:
+    name: Prepare matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Set matrix
+        id: set-matrix
+        run: |
+          matrix=$(echo '{
+            "include": [
+              {"execute": '${{ github.event.inputs.rhel8 || true }}', "name": "RHEL 8", "os": "rhel8", "distr": "generic"},
+              {"execute": '${{ github.event.inputs.rhel9 || true }}', "name": "RHEL 9", "os": "rhel9", "distr": "generic"},
+              {"execute": '${{ github.event.inputs.centos8s || true }}', "name": "CentOS 8 Stream", "os": "base-centos8s", "distr": "onlyoffice"},
+              {"execute": '${{ github.event.inputs.centos9s || true }}', "name": "CentOS 9 Stream", "os": "base-centos9s", "distr": "onlyoffice"},
+              {"execute": '${{ github.event.inputs.amazonlinux2023 || true }}', "name": "Amazon Linux 2023", "os": "amazonlinux-2023", "distr": "bento"},
+              {"execute": '${{ github.event.inputs.debian10 || true }}', "name": "Debian 10", "os": "base-debian10", "distr": "onlyoffice"},
+              {"execute": '${{ github.event.inputs.debian11 || true }}', "name": "Debian 11", "os": "base-debian11", "distr": "onlyoffice"},
+              {"execute": '${{ github.event.inputs.debian12 || true }}', "name": "Debian 12", "os": "base-debian12", "distr": "onlyoffice"},
+              {"execute": '${{ github.event.inputs.ubuntu2004 || true }}', "name": "Ubuntu 20.04", "os": "base-ubuntu2004", "distr": "onlyoffice"},
+              {"execute": '${{ github.event.inputs.ubuntu2204 || true }}', "name": "Ubuntu 22.04", "os": "base-ubuntu2204", "distr": "onlyoffice"},
+              {"execute": '${{ github.event.inputs.ubuntu2404 || true }}', "name": "Ubuntu 24.04", "os": "base-ubuntu2404", "distr": "onlyoffice"}
+            ]
+          }')
+
+          matrix=$(jq -c '{include: [.include[] | select(.execute)]}' <<< "$matrix")
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
 
   vagrant-up:
-    name: "Test Docs with ${{matrix.name}}"
-    needs: [get-version]
+    name: "Test Docs with ${{ matrix.name }}"
     runs-on: ubuntu-22.04
-    env:
-      VER: ${{ needs.get-version.outputs.ds-ver }}
+    needs: [get-version, prepare]
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - distr: generic
-            os: rhel8
-            name: "RHEL 8"
-
-          - distr: generic
-            os: rhel9
-            name: "RHEL 9"
-
-          - distr: onlyoffice
-            os: base-centos8s
-            name: "CentOS 8 Stream"
-
-          - distr: onlyoffice
-            os: base-centos9s
-            name: "CentOS 9 Stream"
-
-          - distr: bento
-            os: amazonlinux-2023
-            name: "Amazon Linux 2023"
-
-          - distr: onlyoffice
-            os: base-debian10
-            name: "Debian 10"
-
-          - distr: onlyoffice
-            os: base-debian11
-            name: "Debian 11"
-
-          - distr: onlyoffice
-            os: base-debian12
-            name: "Debian 12"
-
-          - distr: onlyoffice
-            os: base-ubuntu2004
-            name: "Ubuntu 20.04"
-
-          - distr: onlyoffice
-            os: base-ubuntu2204
-            name: "Ubuntu 22.04"
-
-          - distr: onlyoffice
-            os: base-ubuntu2404
-            name: "Ubuntu 24.04"
+      matrix: ${{fromJSON(needs.prepare.outputs.matrix)}}
+    env:
+      VER: ${{ needs.get-version.outputs.ds-ver }}
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Python 3.
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.x'
+      - name: Set up Python 3
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
 
-    - name: Set up vagrant and virtualbox
-      run: |
-           wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | sudo gpg --dearmor -o /usr/share/keyrings/virtualbox.gpg
-           echo "deb [arch=amd64 signed-by=/usr/share/keyrings/virtualbox.gpg] https://download.virtualbox.org/virtualbox/debian $(. /etc/os-release && echo $UBUNTU_CODENAME) contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list
-           curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-           echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-           sudo apt update -y
-           sudo apt install vagrant virtualbox-7.0 -y
+      - name: Set up vagrant and virtualbox
+        run: |
+          wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | sudo gpg --dearmor -o /usr/share/keyrings/virtualbox.gpg
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/virtualbox.gpg] https://download.virtualbox.org/virtualbox/debian $(. /etc/os-release && echo $UBUNTU_CODENAME) contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list
+          curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+          sudo apt update -y
+          sudo apt install vagrant virtualbox-7.0 -y
 
-    - name: Test production scripts
-      if: ${{ github.event_name == 'schedule' }}
-      uses: nick-fields/retry@v2
-      with:
-        max_attempts: 2
-        timeout_minutes: 40
-        retry_on: error
-        command: |
-                set -eux
-                cd tests/vagrant
-                   TEST_CASE='--production-install' \
-                   DISTR='${{ matrix.distr }}' \
-                   OS='${{ matrix.os }}' \
-                   DOWNLOAD_SCRIPT='-ds true' \
-                   RAM='4096' \
-                   CPU='2' \
-                   ARGUMENTS="-arg '--skiphardwarecheck true --makeswap false'" \
-                   vagrant up
-        on_retry_command: |
-              echo "RUN CLEAN UP: Destroy vagrant and one more try"
-              cd tests/vagrant
-              sleep 10
-              vagrant destroy --force
+      - name: "Test production scripts"
+        if: ${{ github.event_name == 'schedule' }}
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 2
+          timeout_minutes: 40
+          retry_on: error
+          command: |
+            set -eux
+            cd tests/vagrant
+            TEST_CASE='--production-install' \
+            DISTR='${{ matrix.distr }}' \
+            OS='${{ matrix.os }}' \
+            DOWNLOAD_SCRIPT='-ds true' \
+            RAM='4096' \
+            CPU='2' \
+            ARGUMENTS="-arg '--skiphardwarecheck true --makeswap false'" \
+            vagrant up
+          on_retry_command: |
+            echo "RUN CLEAN UP: Destroy vagrant and one more try"
+            cd tests/vagrant
+            sleep 10
+            vagrant destroy --force
 
-    - name: "Test Local scripts with ver: ${{ needs.get-version.outputs.ds-ver }}"
-      if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'push' }}
-      uses: nick-fields/retry@v2
-      with:
-         max_attempts: 2
-         timeout_minutes: 40
-         retry_on: error
-         command: |
-                  set -eux
-                  cd tests/vagrant
-                    TEST_CASE='--local-install' \
-                    DISTR='${{ matrix.distr }}' \
-                    OS='${{ matrix.os }}' \
-                    RAM='4096' \
-                    CPU='2' \
-                    VER='-v ${{ env.VER }}' \
-                    DOWNLOAD_SCRIPT='-ds false' \
-                    TEST_REPO='-tr true' \
-                    ARGUMENTS="-arg '--skiphardwarecheck true --makeswap false --localscripts true'" \
-                    vagrant up
-         on_retry_command: |
-                    echo "RUN CLEAN UP: Destroy vagrant and one more try"
-                    cd tests/vagrant
-                    sleep 10
-                    vagrant destroy --force
+      - name: "Test local scripts with ver: ${{ env.VER }}"
+        if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'push' }}
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 2
+          timeout_minutes: 40
+          retry_on: error
+          command: |
+            set -eux
+            cd tests/vagrant
+            TEST_CASE='--local-install' \
+            DISTR='${{ matrix.distr }}' \
+            OS='${{ matrix.os }}' \
+            RAM='4096' \
+            CPU='2' \
+            VER='-v ${{ env.VER }}' \
+            DOWNLOAD_SCRIPT='-ds false' \
+            TEST_REPO='-tr true' \
+            ARGUMENTS="-arg '--skiphardwarecheck true --makeswap false --localscripts true'" \
+            vagrant up
+          on_retry_command: |
+            echo "RUN CLEAN UP: Destroy vagrant and one more try"
+            cd tests/vagrant
+            sleep 10
+            vagrant destroy --force
+
