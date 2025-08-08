@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Check out repository
         run: |
-          git clone https://${{ secrets.GITEA_TOKEN }}@git.onlyoffice.com/isboston/OneClickInstall-Docs -b ${{ github.ref_name }} --single-branch --depth=1
+          git clone https://${{ secrets.GITEA_TOKEN }}@@${{ secrets.GITEA_HOST }}/${{ github.repository }} -b ${{ github.ref_name }} --single-branch --depth=1
 
       - name: Install yq
         run: |
