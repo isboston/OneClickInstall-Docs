@@ -50,13 +50,13 @@ jobs:
           #   os: base-centos8s
           #   name: "CentOS 8 Stream"
 
-          # - distr: onlyoffice
-          #   os: base-centos9s
-          #   name: "CentOS 9 Stream"
-
           - distr: onlyoffice
-            os: base-centos10
-            name: "CentOS 10"
+            os: base-centos9s
+            name: "CentOS 9 Stream"
+
+          # - distr: onlyoffice
+          #   os: base-centos10
+          #   name: "CentOS 10"
 
           # - distr: bento
           #   os: amazonlinux-2023
