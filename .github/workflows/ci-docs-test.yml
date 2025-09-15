@@ -54,13 +54,13 @@ jobs:
           #   os: base-centos9s
           #   name: "CentOS 9 Stream"
 
-          - distr: centos
-            os: stream10
-            name: "CentOS 10"
-
-          # - distr: onlyoffice
-          #   os: base-centos10
+          # - distr: centos
+          #   os: stream10
           #   name: "CentOS 10"
+
+          - distr: onlyoffice
+            os: base-centos10
+            name: "CentOS 10"
 
           # - distr: bento
           #   os: amazonlinux-2023
@@ -104,7 +104,7 @@ jobs:
            curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
            echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
            sudo apt update -y
-           sudo apt install vagrant virtualbox-7.0 -y
+           sudo apt install vagrant virtualbox-7.1 -y
 
     - name: Test production scripts
       if: ${{ github.event_name == 'schedule' }}
