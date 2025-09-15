@@ -119,7 +119,7 @@ jobs:
                    RAM='4096' \
                    CPU='2' \
                    ARGUMENTS="-arg '--skiphardwarecheck true --makeswap false'" \
-                   vagrant up
+                   vagrant up --provider=virtualbox
         on_retry_command: |
               echo "RUN CLEAN UP: Destroy vagrant and one more try"
               cd tests/vagrant
@@ -145,7 +145,7 @@ jobs:
                     DOWNLOAD_SCRIPT='-ds false' \
                     TEST_REPO='-tr true' \
                     ARGUMENTS="-arg '--skiphardwarecheck true --makeswap false --localscripts true'" \
-                    vagrant up
+                    vagrant up --provider=virtualbox
          on_retry_command: |
                     echo "RUN CLEAN UP: Destroy vagrant and one more try"
                     cd tests/vagrant
