@@ -34,7 +34,7 @@ fi
 yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-$REV.noarch.rpm || true
 
 #add rabbitmq repo
-curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.rpm.sh | os=el dist=${REV} bash
+curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.rpm.sh | os=el dist=9 bash
 
 if rpm -q rabbitmq-server; then
     if [ "$(repoquery --installed rabbitmq-server --qf '%{ui_from_repo}' | sed 's/@//')" != "$(repoquery rabbitmq-server --qf='%{ui_from_repo}')" ]; then
@@ -53,7 +53,7 @@ if [[ "$(uname -m)" =~ (arm|aarch) ]] && [[ $REV -gt 7 ]]; then
         '.[] | .assets[]? | select(.name | test("erlang-[0-9\\.]+-1\\.el" + $rev + "\\.aarch64\\.rpm$")) | .browser_download_url' | head -n1)
     yum install -y "${ERLANG_LATEST_URL}"
 else
-    curl -s https://packagecloud.io/install/repositories/rabbitmq/erlang/script.rpm.sh | os=el dist=${REV} bash
+    curl -s https://packagecloud.io/install/repositories/rabbitmq/erlang/script.rpm.sh | os=el dist=9 bash
 fi
 
 # add nginx repo
