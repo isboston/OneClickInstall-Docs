@@ -108,6 +108,17 @@ dbg_pkg xorg-x11-server-Xvfb
 dbg_pkg onlyoffice-documentserver
 
 
+# сразу после блока "INSTALL PREREQUISITES", до установки onlyoffice-documentserver:
+
+if [ "${REV}" = "10" ]; then
+  dnf -y --nogpgcheck install \
+    https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/libXScrnSaver-1.2.3-10.el9.x86_64.rpm \
+    https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/xorg-x11-server-common-1.20.11-27.el9.x86_64.rpm \
+    https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/xorg-x11-server-Xvfb-1.20.11-27.el9.x86_64.rpm \
+    https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/Packages/c/cabextract-1.9.1-3.el9.x86_64.rpm || true
+fi
+
+
 if [[ $PSQLExitCode -eq $UPDATE_AVAILABLE_CODE ]]; then
     yum -y install postgresql-upgrade
     postgresql-setup --upgrade || true
