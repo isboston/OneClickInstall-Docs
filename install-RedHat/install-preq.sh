@@ -13,7 +13,26 @@ EOF
 # clean yum cache
 yum clean all
 
+# --- DEBUG: показать кандидатов и источник установленного пакета ---
+dbg_pkg() {
+  local pkg="$1"
+  echo "=== DEBUG: candidates for ${pkg} ==="
+  repoquery --show-duplicates --available \
+    --qf '%{name}-%{version}-%{release}.%{arch} :: %{repoid}' "${pkg}" || true
+  if rpm -q "${pkg}" >/dev/null 2>&1; then
+    echo "=== DEBUG: installed ${pkg} ==="
+    # покажем из какого репо установлен (ui_from_repo), fallback на rpm -q
+    repoquery --installed \
+      --qf '%{name}-%{version}-%{release}.%{arch} from %{ui_from_repo}' "${pkg}" \
+      || rpm -q "${pkg}" || true
+  fi
+}
+
 yum -y install yum-utils
+
+echo "=== DEBUG: os-release ==="; cat /etc/os-release || true
+echo "=== DEBUG: REV=${REV:-?} DIST=${DIST:-?} ==="
+echo "=== DEBUG: enabled repos ==="; dnf -q repolist || yum -q repolist || true
 
 { yum check-update postgresql; PSQLExitCode=$?; } || true 
 { yum check-update $DIST*-release; exitCode=$?; } || true #Checking for distribution update
@@ -29,7 +48,11 @@ if [[ $exitCode -eq $UPDATE_AVAILABLE_CODE ]]; then
 fi
 
 [ "$REV" = "9" ] && update-crypto-policies --set DEFAULT:SHA1 && yum -y install xorg-x11-font-utils
-[ "$REV" = "10" ] && yum -y install xorg-x11-font-utils
+
+if [ "$REV" = "10" ]; then
+    REV=9
+fi
+
 #Add repo EPEL
 yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-$REV.noarch.rpm || true
 
@@ -75,6 +98,15 @@ yum -y install epel-release \
             rabbitmq-server \
             valkey \
             policycoreutils-python*
+
+dbg_pkg rabbitmq-server
+dbg_pkg erlang
+dbg_pkg postgresql-server
+dbg_pkg valkey
+dbg_pkg redis
+dbg_pkg xorg-x11-server-Xvfb
+dbg_pkg onlyoffice-documentserver
+
 
 if [[ $PSQLExitCode -eq $UPDATE_AVAILABLE_CODE ]]; then
     yum -y install postgresql-upgrade
