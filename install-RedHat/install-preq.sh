@@ -29,7 +29,7 @@ if [[ $exitCode -eq $UPDATE_AVAILABLE_CODE ]]; then
 fi
 
 [ "$REV" = "9" ] && update-crypto-policies --set DEFAULT:SHA1 && yum -y install xorg-x11-font-utils
-
+[ "$REV" = "10" ] && yum -y install xorg-x11-font-utils
 #Add repo EPEL
 yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-$REV.noarch.rpm || true
 
