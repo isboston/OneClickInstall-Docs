@@ -76,6 +76,25 @@ yum -y install epel-release \
             valkey \
             policycoreutils-python*
 
+# ---- EL10: закрываем зависимость Xvfb для ONLYOFFICE без включения реп ----
+if [[ "$REV" == "10" ]] && ! rpm -q xorg-x11-server-Xvfb >/dev/null 2>&1; then
+  ARCH="$(rpm -E '%{_arch}')"
+  XORG_VER="1.20.11-27.el9"   # проверенная версия из CS9
+
+  echo "==> EL10: ставлю Xvfb и общие части из CS9 RPM"
+  dnf -y --nogpgcheck install \
+    "https://mirror.stream.centos.org/9-stream/AppStream/${ARCH}/os/Packages/xorg-x11-server-common-${XORG_VER}.${ARCH}.rpm" \
+    "https://mirror.stream.centos.org/9-stream/AppStream/${ARCH}/os/Packages/xorg-x11-server-Xvfb-${XORG_VER}.${ARCH}.rpm" \
+    "https://mirror.stream.centos.org/9-stream/AppStream/${ARCH}/os/Packages/libXScrnSaver-1.2.3-10.el9.${ARCH}.rpm"
+
+  # cabextract лучше взять нативный для el10 (из EPEL10)
+  dnf -y --enablerepo=epel install cabextract || true
+
+  rpm -q xorg-x11-server-Xvfb || { echo "Xvfb не установился — проверь URLs/версию"; exit 1; }
+fi
+# ---- /EL10 ----
+
+
 if [[ $PSQLExitCode -eq $UPDATE_AVAILABLE_CODE ]]; then
     yum -y install postgresql-upgrade
     postgresql-setup --upgrade || true
