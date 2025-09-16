@@ -13,26 +13,7 @@ EOF
 # clean yum cache
 yum clean all
 
-# --- DEBUG: показать кандидатов и источник установленного пакета ---
-dbg_pkg() {
-  local pkg="$1"
-  echo "=== DEBUG: candidates for ${pkg} ==="
-  repoquery --show-duplicates --available \
-    --qf '%{name}-%{version}-%{release}.%{arch} :: %{repoid}' "${pkg}" || true
-  if rpm -q "${pkg}" >/dev/null 2>&1; then
-    echo "=== DEBUG: installed ${pkg} ==="
-    # покажем из какого репо установлен (ui_from_repo), fallback на rpm -q
-    repoquery --installed \
-      --qf '%{name}-%{version}-%{release}.%{arch} from %{ui_from_repo}' "${pkg}" \
-      || rpm -q "${pkg}" || true
-  fi
-}
-
 yum -y install yum-utils
-
-echo "=== DEBUG: os-release ==="; cat /etc/os-release || true
-echo "=== DEBUG: REV=${REV:-?} DIST=${DIST:-?} ==="
-echo "=== DEBUG: enabled repos ==="; dnf -q repolist || yum -q repolist || true
 
 { yum check-update postgresql; PSQLExitCode=$?; } || true 
 { yum check-update $DIST*-release; exitCode=$?; } || true #Checking for distribution update
@@ -49,15 +30,11 @@ fi
 
 [ "$REV" = "9" ] && update-crypto-policies --set DEFAULT:SHA1 && yum -y install xorg-x11-font-utils
 
-if [ "$REV" = "10" ]; then
-    REV=9
-fi
-
 #Add repo EPEL
 yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-$REV.noarch.rpm || true
 
 #add rabbitmq repo
-curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.rpm.sh | os=el dist=9 bash
+curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.rpm.sh | os=el dist=10 bash
 
 if rpm -q rabbitmq-server; then
     if [ "$(repoquery --installed rabbitmq-server --qf '%{ui_from_repo}' | sed 's/@//')" != "$(repoquery rabbitmq-server --qf='%{ui_from_repo}')" ]; then
@@ -76,7 +53,7 @@ if [[ "$(uname -m)" =~ (arm|aarch) ]] && [[ $REV -gt 7 ]]; then
         '.[] | .assets[]? | select(.name | test("erlang-[0-9\\.]+-1\\.el" + $rev + "\\.aarch64\\.rpm$")) | .browser_download_url' | head -n1)
     yum install -y "${ERLANG_LATEST_URL}"
 else
-    curl -s https://packagecloud.io/install/repositories/rabbitmq/erlang/script.rpm.sh | os=el dist=9 bash
+    curl -s https://packagecloud.io/install/repositories/rabbitmq/erlang/script.rpm.sh | os=el dist=10 bash
 fi
 
 # add nginx repo
@@ -98,25 +75,6 @@ yum -y install epel-release \
             rabbitmq-server \
             valkey \
             policycoreutils-python*
-
-dbg_pkg rabbitmq-server
-dbg_pkg erlang
-dbg_pkg postgresql-server
-dbg_pkg valkey
-dbg_pkg redis
-dbg_pkg xorg-x11-server-Xvfb
-dbg_pkg onlyoffice-documentserver
-
-
-
-if [ "${REV}" = "9" ]; then
-  dnf -y --nogpgcheck install \
-    https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/libXScrnSaver-1.2.3-10.el9.x86_64.rpm \
-    https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/xorg-x11-server-common-1.20.11-27.el9.x86_64.rpm \
-    https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/xorg-x11-server-Xvfb-1.20.11-27.el9.x86_64.rpm \
-    https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/Packages/c/cabextract-1.9.1-3.el9.x86_64.rpm || true
-fi
-
 
 if [[ $PSQLExitCode -eq $UPDATE_AVAILABLE_CODE ]]; then
     yum -y install postgresql-upgrade
