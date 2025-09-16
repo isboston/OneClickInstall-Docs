@@ -134,28 +134,28 @@ enabled=1
 gpgcheck=0
 EOF
 
-    elif [[ "${REV}" =~ ^10 ]]; then
-      update-crypto-policies --set LEGACY
-      echo "${COLOR_GREEN}[OK] PREPARE_VM: sha1 gpg key check enabled${COLOR_RESET}"
-      cat <<EOF | sudo tee /etc/yum.repos.d/centos-stream-10.repo
-[centos10s-baseos]
-name=CentOS Stream 10 - BaseOS
-baseurl=http://mirror.stream.centos.org/10-stream/BaseOS/x86_64/os/
-enabled=1
-gpgcheck=0
+#     elif [[ "${REV}" =~ ^10 ]]; then
+#       update-crypto-policies --set LEGACY
+#       echo "${COLOR_GREEN}[OK] PREPARE_VM: sha1 gpg key check enabled${COLOR_RESET}"
+#       cat <<EOF | sudo tee /etc/yum.repos.d/centos-stream-10.repo
+# [centos10s-baseos]
+# name=CentOS Stream 10 - BaseOS
+# baseurl=http://mirror.stream.centos.org/10-stream/BaseOS/x86_64/os/
+# enabled=1
+# gpgcheck=0
 
-[centos10s-appstream]
-name=CentOS Stream 10 - AppStream
-baseurl=http://mirror.stream.centos.org/10-stream/AppStream/x86_64/os/
-enabled=1
-gpgcheck=0
+# [centos10s-appstream]
+# name=CentOS Stream 10 - AppStream
+# baseurl=http://mirror.stream.centos.org/10-stream/AppStream/x86_64/os/
+# enabled=1
+# gpgcheck=0
 
-[centos10s-extras-common]
-name=CentOS Stream 10 - Extras
-baseurl=https://mirror.stream.centos.org/SIGs/10-stream/extras/x86_64/extras-common/
-enabled=1
-gpgcheck=0
-EOF
+# [centos10s-extras-common]
+# name=CentOS Stream 10 - Extras
+# baseurl=https://mirror.stream.centos.org/SIGs/10-stream/extras/x86_64/extras-common/
+# enabled=1
+# gpgcheck=0
+# EOF
 
     else
       if grep -qi 'centos' /etc/redhat-release; then
