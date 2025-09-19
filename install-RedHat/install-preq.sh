@@ -73,26 +73,33 @@ yum -y install epel-release \
             postgresql \
             postgresql-server \
             rabbitmq-server \
-            valkey \
+            redis \
             policycoreutils-python*
 
-# ---- EL10: закрываем зависимость Xvfb для ONLYOFFICE без включения реп ----
-if [[ "$REV" == "10" ]] && ! rpm -q xorg-x11-server-Xvfb >/dev/null 2>&1; then
-  ARCH="$(rpm -E '%{_arch}')"
-  XORG_VER="1.20.11-27.el9"   # проверенная версия из CS9
+# # ---- EL10: закрываем зависимость Xvfb для ONLYOFFICE без включения реп ----
+# if [[ "$REV" == "10" ]] && ! rpm -q xorg-x11-server-Xvfb >/dev/null 2>&1; then
+#   ARCH="$(rpm -E '%{_arch}')"
+#   XORG_VER="1.20.11-27.el9"   # проверенная версия из CS9
 
-  echo "==> EL10: ставлю Xvfb и общие части из CS9 RPM"
-  dnf -y --nogpgcheck install \
-    "https://mirror.stream.centos.org/9-stream/AppStream/${ARCH}/os/Packages/xorg-x11-server-common-${XORG_VER}.${ARCH}.rpm" \
-    "https://mirror.stream.centos.org/9-stream/AppStream/${ARCH}/os/Packages/xorg-x11-server-Xvfb-${XORG_VER}.${ARCH}.rpm" \
-    "https://mirror.stream.centos.org/9-stream/AppStream/${ARCH}/os/Packages/libXScrnSaver-1.2.3-10.el9.${ARCH}.rpm"
+#   echo "==> EL10: ставлю Xvfb и общие части из CS9 RPM"
+#   dnf -y --nogpgcheck install \
+#     "https://mirror.stream.centos.org/9-stream/AppStream/${ARCH}/os/Packages/xorg-x11-server-common-${XORG_VER}.${ARCH}.rpm" \
+#     "https://mirror.stream.centos.org/9-stream/AppStream/${ARCH}/os/Packages/xorg-x11-server-Xvfb-${XORG_VER}.${ARCH}.rpm" \
+#     "https://mirror.stream.centos.org/9-stream/AppStream/${ARCH}/os/Packages/libXScrnSaver-1.2.3-10.el9.${ARCH}.rpm"
 
-  # cabextract лучше взять нативный для el10 (из EPEL10)
-  dnf -y --enablerepo=epel install cabextract || true
+#   # cabextract лучше взять нативный для el10 (из EPEL10)
+#   dnf -y --enablerepo=epel install cabextract || true
 
-  rpm -q xorg-x11-server-Xvfb || { echo "Xvfb не установился — проверь URLs/версию"; exit 1; }
-fi
-# ---- /EL10 ----
+#   rpm -q xorg-x11-server-Xvfb || { echo "Xvfb не установился — проверь URLs/версию"; exit 1; }
+# fi
+# # ---- /EL10 ----
+
+
+yum -y install https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/libXScrnSaver-1.2.3-10.el9.x86_64.rpm \ 
+               https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/xorg-x11-server-common-1.20.11-27.el9.x86_64.rpm \
+               https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/xorg-x11-server-Xvfb-1.20.11-27.el9.x86_64.rpm \
+               https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/Packages/c/cabextract-1.9.1-3.el9.x86_64.rpm
+
 
 
 if [[ $PSQLExitCode -eq $UPDATE_AVAILABLE_CODE ]]; then
@@ -112,4 +119,6 @@ if [ -e /etc/redis.conf ]; then
     sed -r "/^save\s[0-9]+/d" -i /etc/redis.conf
 fi
 
-package_services="rabbitmq-server postgresql valkey"
+package_services="rabbitmq-server postgresql redis"
+
+rpm -q valkey &>/dev/null && package_services="${package_services//redis/valkey}" || true
