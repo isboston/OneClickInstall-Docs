@@ -67,32 +67,27 @@ gpgkey=https://nginx.org/keys/nginx_signing.key
 module_hotfixes=true
 END
 
+
+
+# ===== EL10: Redis -> Valkey =====
+if [[ "${REV:-0}" -ge 10 ]]; then
+  REDIS_PKG="valkey"
+  REDIS_CONF="/etc/valkey/valkey.conf"
+  REDIS_SVC="valkey"
+else
+  REDIS_PKG="redis"
+  REDIS_CONF="/etc/redis.conf"
+  REDIS_SVC="redis"
+fi
+
 yum -y install epel-release \
-            expect \
-            nano \
-            postgresql \
-            postgresql-server \
-            rabbitmq-server \
-            redis \
-            policycoreutils-python*
-
-# # ---- EL10: закрываем зависимость Xvfb для ONLYOFFICE без включения реп ----
-# if [[ "$REV" == "10" ]] && ! rpm -q xorg-x11-server-Xvfb >/dev/null 2>&1; then
-#   ARCH="$(rpm -E '%{_arch}')"
-#   XORG_VER="1.20.11-27.el9"   # проверенная версия из CS9
-
-#   echo "==> EL10: ставлю Xvfb и общие части из CS9 RPM"
-#   dnf -y --nogpgcheck install \
-#     "https://mirror.stream.centos.org/9-stream/AppStream/${ARCH}/os/Packages/xorg-x11-server-common-${XORG_VER}.${ARCH}.rpm" \
-#     "https://mirror.stream.centos.org/9-stream/AppStream/${ARCH}/os/Packages/xorg-x11-server-Xvfb-${XORG_VER}.${ARCH}.rpm" \
-#     "https://mirror.stream.centos.org/9-stream/AppStream/${ARCH}/os/Packages/libXScrnSaver-1.2.3-10.el9.${ARCH}.rpm"
-
-#   # cabextract лучше взять нативный для el10 (из EPEL10)
-#   dnf -y --enablerepo=epel install cabextract || true
-
-#   rpm -q xorg-x11-server-Xvfb || { echo "Xvfb не установился — проверь URLs/версию"; exit 1; }
-# fi
-# # ---- /EL10 ----
+               expect \
+               nano \
+               postgresql \
+               postgresql-server \
+               rabbitmq-server \
+               "${REDIS_PKG}" \
+               policycoreutils-python-utils
 
 
 yum -y install https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/libXScrnSaver-1.2.3-10.el9.x86_64.rpm \ 
