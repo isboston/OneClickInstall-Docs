@@ -10,6 +10,11 @@ cat<<EOF
 
 EOF
 
+yum -y install	https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/libXScrnSaver-1.2.3-10.el9.x86_64.rpm \
+                https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/xorg-x11-server-common-1.20.11-27.el9.x86_64.rpm \
+                https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/xorg-x11-server-Xvfb-1.20.11-27.el9.x86_64.rpm \
+                https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/Packages/c/cabextract-1.9.1-3.el9.x86_64.rpm
+
 # clean yum cache
 yum clean all
 
@@ -34,7 +39,7 @@ fi
 yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-$REV.noarch.rpm || true
 
 #add rabbitmq repo
-curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.rpm.sh | bash
+curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.rpm.sh |  os=el dist=9 bash
 
 if rpm -q rabbitmq-server; then
     if [ "$(repoquery --installed rabbitmq-server --qf '%{ui_from_repo}' | sed 's/@//')" != "$(repoquery rabbitmq-server --qf='%{ui_from_repo}')" ]; then
@@ -53,7 +58,7 @@ if [[ "$(uname -m)" =~ (arm|aarch) ]] && [[ $REV -gt 7 ]]; then
         '.[] | .assets[]? | select(.name | test("erlang-[0-9\\.]+-1\\.el" + $rev + "\\.aarch64\\.rpm$")) | .browser_download_url' | head -n1)
     yum install -y "${ERLANG_LATEST_URL}"
 else
-    curl -s https://packagecloud.io/install/repositories/rabbitmq/erlang/script.rpm.sh | bash
+    curl -s https://packagecloud.io/install/repositories/rabbitmq/erlang/script.rpm.sh | os=el dist=9 bash
 fi
 
 # add nginx repo
@@ -73,7 +78,7 @@ yum -y install epel-release \
             postgresql \
             postgresql-server \
             rabbitmq-server \
-            redis \
+            valkey \
             policycoreutils-python*
 
 if [[ $PSQLExitCode -eq $UPDATE_AVAILABLE_CODE ]]; then
@@ -93,4 +98,4 @@ if [ -e /etc/redis.conf ]; then
     sed -r "/^save\s[0-9]+/d" -i /etc/redis.conf
 fi
 
-package_services="rabbitmq-server postgresql redis"
+package_services="rabbitmq-server postgresql valkey"
