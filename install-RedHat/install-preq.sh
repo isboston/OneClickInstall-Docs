@@ -12,8 +12,8 @@ EOF
 
 yum -y install	https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/libXScrnSaver-1.2.3-10.el9.x86_64.rpm \
                 https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/xorg-x11-server-common-1.20.11-27.el9.x86_64.rpm \
-                https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/xorg-x11-server-Xvfb-1.20.11-27.el9.x86_64.rpm \
-                https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/Packages/c/cabextract-1.9.1-3.el9.x86_64.rpm
+                https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/xorg-x11-server-Xvfb-1.20.11-27.el9.x86_64.rpm
+
 
 # clean yum cache
 yum clean all
