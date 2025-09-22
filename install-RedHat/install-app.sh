@@ -33,6 +33,103 @@ if [ "$UPDATE" = "true" ] && [ "$DOCUMENT_SERVER_INSTALLED" = "true" ]; then
     fi
 fi
 
+# === helper: repack DS RPM for EL10 by removing ICU files ===
+install_ds_el10_without_icu() {
+  set -euo pipefail
+
+  local PM="${package_manager:-dnf}"
+
+  # 1) инструменты для перепаковки
+  $PM -y --setopt=install_weak_deps=False install rpm-build rpmdevtools cpio file rsync
+
+  # 2) скачиваем оригинальный RPM из подключённого репозитория ONLYOFFICE
+  local DL="/var/tmp/onlyoffice-dl"
+  mkdir -p "$DL"
+  $PM -y --setopt=install_weak_deps=False --downloadonly --downloaddir="$DL" install "${ds_pkg_name}"
+
+  # 3) ищем скачанный RPM
+  local SRC_RPM
+  SRC_RPM="$(ls -1t "${DL}/${ds_pkg_name}"-*.x86_64.rpm | head -n1)"
+  [[ -n "${SRC_RPM:-}" ]] || { echo "Не найден RPM ${ds_pkg_name}"; exit 1; }
+
+  # 4) распаковываем payload и получаем список файлов
+  local TMP="/tmp/oods-repack.$$"
+  mkdir -p "${TMP}/orig" "${TMP}/rootfs"
+  ( cd "${TMP}/orig" && rpm2cpio "${SRC_RPM}" | cpio -idmv )
+
+  local FILELIST="${TMP}/files.txt"
+  rpm -qlp "${SRC_RPM}" > "${FILELIST}"
+
+  # 5) вырезаем только ICU-файлы из /usr/lib64
+  local ICU_GLOB='^/usr/lib64/libicu.*\.so(\.|$)'
+  grep -Ev "${ICU_GLOB}" "${FILELIST}" > "${TMP}/files.filtered"
+
+  # переносим все остальные файлы в будущий BUILDROOT
+  while read -r f; do
+    [[ -z "$f" || "$f" == */ ]] && continue
+    [[ "$f" =~ ^/usr/lib64/libicu.*\.so(\.|$) ]] && continue
+    src="${TMP}/orig/$(echo "$f" | sed 's#^/##')"
+    [[ -e "$src" ]] || continue
+    install -d "${TMP}/rootfs$(dirname "$f")"
+    if [[ -x "$src" ]]; then
+      install -m 0755 "$src" "${TMP}/rootfs$f"
+    else
+      install -m 0644 "$src" "${TMP}/rootfs$f"
+    fi
+  done < "${TMP}/files.filtered"
+
+  # 6) метаданные из исходного RPM
+  local NAME VERSION RELEASE SUMMARY
+  NAME="$(rpm -qp --queryformat '%{NAME}\n'     "${SRC_RPM}")"
+  VERSION="$(rpm -qp --queryformat '%{VERSION}\n' "${SRC_RPM}")"
+  RELEASE="$(rpm -qp --queryformat '%{RELEASE}\n' "${SRC_RPM}")"
+  SUMMARY="$(rpm -qp --queryformat '%{SUMMARY}\n' "${SRC_RPM}")"
+
+  # 7) готовим rpmbuild окружение
+  rpmdev-setuptree
+  local SPECDIR="$HOME/rpmbuild/SPECS"
+  local BUILDROOT="$HOME/rpmbuild/BUILDROOT/${NAME}-${VERSION}-${RELEASE}.x86_64"
+  mkdir -p "$SPECDIR" "$BUILDROOT"
+  rsync -a "${TMP}/rootfs/" "${BUILDROOT}/"
+
+  # 8) минимальный SPEC без ICU; на EL10 требуем системный libicu
+  cat > "${SPECDIR}/${NAME}.spec" <<SPEC
+Name:           ${NAME}
+Version:        ${VERSION}
+Release:        ${RELEASE}
+Summary:        ${SUMMARY}
+License:        as-is
+BuildArch:      x86_64
+%if 0%{?rhel} >= 10
+Requires:       libicu >= 74
+%endif
+
+%description
+Repacked ${NAME} without bundled ICU libraries to avoid file conflicts on EL10.
+
+%install
+mkdir -p %{buildroot}
+
+%files
+%defattr(-,root,root,-)
+$(sed 's#^#/#' "${TMP}/files.filtered")
+
+%post
+/sbin/ldconfig >/dev/null 2>&1 || :
+%postun
+/sbin/ldconfig >/dev/null 2>&1 || :
+SPEC
+
+  # 9) собираем и устанавливаем перепакованный RPM
+  rpmbuild -bb "${SPECDIR}/${NAME}.spec"
+  local OUT_RPM
+  OUT_RPM="$(ls -1t "$HOME/rpmbuild/RPMS/x86_64/${NAME}-${VERSION}-${RELEASE}.x86_64.rpm" | head -n1)"
+  $PM -y --setopt=install_weak_deps=False install "${OUT_RPM}"
+
+  # 10) уборка
+  rm -rf "${TMP}" "${DL}"
+}
+
 if [ "$DOCUMENT_SERVER_INSTALLED" = "false" ]; then
     declare -x DS_PORT=${DS_PORT:-80}
 
@@ -58,7 +155,12 @@ if [ "$DOCUMENT_SERVER_INSTALLED" = "false" ]; then
         su - postgres -s /bin/bash -c "psql -c \"CREATE DATABASE ${DS_DB_NAME} OWNER ${DS_DB_USER};\""
     fi
 
-    ${package_manager} -y install ${ds_pkg_name}
+    # === установка DS: на EL10 — репак без ICU, на остальных — обычная установка ===
+    if [ "$(rpm -E %rhel)" -ge 10 ]; then
+        install_ds_el10_without_icu
+    else
+        ${package_manager} -y --setopt=install_weak_deps=False install ${ds_pkg_name}
+    fi
 
 expect << EOF
 
