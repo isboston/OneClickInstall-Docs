@@ -54,8 +54,12 @@ jobs:
           #   os: base-centos9s
           #   name: "CentOS 9 Stream"
 
-          - distr: onlyoffice
-            os: base-centos10
+          # - distr: onlyoffice
+          #   os: base-centos10
+          #   name: "CentOS 10"
+
+          - distr: centos
+            os: stream10
             name: "CentOS 10"
 
           # - distr: bento
@@ -143,7 +147,7 @@ jobs:
                     CPU='2' \
                     VER='-v ${{ env.VER }}' \
                     DOWNLOAD_SCRIPT='-ds true' \
-                    TEST_REPO='-tr false' \
+                    TEST_REPO='-tr true' \
                     ARGUMENTS="-arg '--skiphardwarecheck true --makeswap false --localscripts true'" \
                     vagrant up
          on_retry_command: |
