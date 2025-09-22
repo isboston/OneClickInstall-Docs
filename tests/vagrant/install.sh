@@ -179,8 +179,12 @@ function prepare_vm() {
 #   Script log
 #############################################################################################
 function install_docs() {
+    if ! command -v curl >/dev/null 2>&1; then
+        (command -v apt-get >/dev/null 2>&1 && apt-get update -y && apt-get install -y curl) || (command -v dnf >/dev/null 2>&1 && dnf install -y curl)
+    fi
+
 	if [ "${DOWNLOAD_SCRIPTS}" == 'true' ]; then
-            wget https://download.onlyoffice.com/docs/docs-install.sh
+           curl -fsSLO https://download.onlyoffice.com/docs/docs-install.sh
         fi
         
 	printf "N\nY\nY\nY" | bash docs-install.sh ${ARGUMENTS}
