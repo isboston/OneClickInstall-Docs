@@ -146,7 +146,7 @@ jobs:
                     RAM='4096' \
                     CPU='2' \
                     VER='-v ${{ env.VER }}' \
-                    DOWNLOAD_SCRIPT='-ds false'
+                    DOWNLOAD_SCRIPT='-ds false' \
                     TEST_REPO='-tr false' \
                     ARGUMENTS="-arg '--skiphardwarecheck true --makeswap false --localscripts true'" \
                     vagrant up
