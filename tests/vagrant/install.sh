@@ -1,72 +1,25 @@
 #!/bin/bash
 
-set -e 
+set -e
 
 while [ "$1" != "" ]; do
 	case $1 in
-
-		-ds | --download-scripts )
-                        if [ "$2" != "" ]; then
-                                DOWNLOAD_SCRIPTS=$2
-                                shift
-                        fi
-                ;;
-
-                -arg | --arguments )
-                        if [ "$2" != "" ]; then
-                                ARGUMENTS=$2
-                                shift
-                        fi
-                ;;
-
-
-	        -pi | --production-install )
-			if [ "$2" != "" ]; then
-				PRODUCTION_INSTALL=$2
-				shift
-			fi
-		;;
-
-		-li | --local-install )
-                        if [ "$2" != "" ]; then
-                                LOCAL_INSTALL=$2
-                                shift
-                        fi
-                ;;
-
-		-lu | --local-update )
-                        if [ "$2" != "" ]; then
-                                LOCAL_UPDATE=$2
-                                shift
-                        fi
-                ;;
-
-	        -tr | --test-repo )
-			if [ "$2" != "" ]; then
-				TEST_REPO_ENABLE=$2
-				shift
-		        fi
-		;;
-
-		-v | --version )
-	                if [ "$2" != "" ]; then
-				VER=$2
-				shift
-		        fi
-		;;
-
-        esac
-	shift
+    -ds  | --download-scripts  ) [ -n "$2" ] && DOWNLOAD_SCRIPTS="$2"      && shift ;;
+    -arg | --arguments         ) [ -n "$2" ] && ARGUMENTS="$2"             && shift ;;
+    -pi  | --production-install) [ -n "$2" ] && PRODUCTION_INSTALL="$2"    && shift ;;
+    -li  | --local-install     ) [ -n "$2" ] && LOCAL_INSTALL="$2"         && shift ;;
+    -lu  | --local-update      ) [ -n "$2" ] && LOCAL_UPDATE="$2"          && shift ;;
+    -tr  | --test-repo         ) [ -n "$2" ] && TEST_REPO_ENABLE="$2"      && shift ;;
+    -v   | --version           ) [ -n "$2" ] && VER="$2"                   && shift ;;
+  esac
+  shift
 done
 
 export TERM=xterm-256color
 
-SERVICES_SYSTEMD=(
-        "ds-converter.service"
-        "ds-docservice.service"
-        "ds-metrics.service")      
+SERVICES_SYSTEMD=("ds-converter.service" "ds-docservice.service" "ds-metrics.service")
 
-function common::get_colors() {
+get_colors() {
     COLOR_BLUE=$'\e[34m'
     COLOR_GREEN=$'\e[32m'
     COLOR_RED=$'\e[31m'
@@ -79,33 +32,12 @@ function common::get_colors() {
     export COLOR_YELLOW
 }
 
-#############################################################################################
-# Checking available resources for a virtual machine
-# Globals:
-#   None
-# Arguments:
-#   None
-# Outputs:
-#   None
-#############################################################################################
-function check_hw() {
-        local FREE_RAM=$(free -h)
-	local FREE_CPU=$(nproc)
-	echo "${COLOR_RED} ${FREE_RAM} ${COLOR_RESET}"
-        echo "${COLOR_RED} ${FREE_CPU} ${COLOR_RESET}"
+check_hw() {
+  echo "${COLOR_RED}$(free -h)${COLOR_RESET}"
+  echo "${COLOR_RED}$(nproc)${COLOR_RESET}"
 }
 
-
-#############################################################################################
-# Prepare vagrant boxes like: set hostname/remove postfix for DEB distributions
-# Globals:
-#   None
-# Arguments:
-#   None
-# Outputs:
-#   [OK] PREPARE_VM: **<prepare_message>**
-#############################################################################################
-function prepare_vm() {
+prepare_vm() {
   if grep -qi 'debian\|ubuntu' /etc/os-release; then
 	if [ "${TEST_REPO_ENABLE}" == 'true' ]; then
 	    echo "deb [trusted=yes] https://s3.eu-west-1.amazonaws.com/repo-doc-onlyoffice-com/repo/debian stable ${VER}" | sudo tee /etc/apt/sources.list.d/onlyoffice-dev.list
@@ -161,7 +93,7 @@ fi
   rm -rf /home/vagrant/*
 
   if [ -d /tmp/docs ]; then
-          mv /tmp/docs/* /home/vagrant
+    mv /tmp/docs/* /home/vagrant
   fi
 
 
@@ -170,24 +102,16 @@ fi
 
 }
 
-#############################################################################################
-# Install docs and then healthcheck
-# Globals:
-#   None
-# Arguments:
-#   None
-# Outputs:
-#   Script log
-#############################################################################################
-function install_docs() {
+install_docs() {
     if ! command -v curl >/dev/null 2>&1; then
         (command -v apt-get >/dev/null 2>&1 && apt-get update -y && apt-get install -y curl) || (command -v dnf >/dev/null 2>&1 && dnf install -y curl)
     fi
 
 	if [ "${DOWNLOAD_SCRIPTS}" == 'true' ]; then
-           curl -fsSLO https://download.onlyoffice.com/docs/docs-install.sh
-        fi
-        
+    echo "${COLOR_BLUE}Downloading docs-install.sh...${COLOR_RESET}"
+    curl -fsSLO https://download.onlyoffice.com/docs/docs-install.sh
+  fi
+
 	printf "N\nY\nY\nY" | bash docs-install.sh ${ARGUMENTS}
 
 	if [[ $? != 0 ]]; then
@@ -198,16 +122,7 @@ function install_docs() {
 	fi
 }
 
-#############################################################################################
-# Healthcheck function for systemd services
-# Globals:
-#   SERVICES_SYSTEMD
-# Arguments:
-#   None
-# Outputs:
-#   Message about service status 
-#############################################################################################
-function healthcheck_systemd_services() {
+healthcheck_systemd_services() {
   for service in ${SERVICES_SYSTEMD[@]} 
   do 
     if systemctl is-active --quiet ${service}; then
@@ -219,38 +134,14 @@ function healthcheck_systemd_services() {
   done
 }
 
-#############################################################################################
-# Set output if some services failed
-# Globals:
-#   None
-# Arguments:
-#   None
-# Outputs:
-#   [WARNING] ATTENTION: Some services is not running
-# Returns
-# 0 if all services is start correctly, non-zero if some failed
-#############################################################################################
-function healthcheck_general_status() {
+healthcheck_general_status() {
   if [ ! -z "${SYSTEMD_SVC_FAILED}" ]; then
     echo "${COLOR_YELLOW}[WARNING] ATTENTION: Some services is not running${COLOR_RESET}"
     exit 1
   fi
 }
 
-#############################################################################################
-# Get logs for all services
-# Globals:
-#   $SERVICES_SYSTEMD
-# Arguments:
-#   None
-# Outputs:
-#   Logs for systemd services
-# Returns:
-#   none
-# Commentaries:
-# This function succeeds even if the file for cat was not found. For that use ${SKIP_EXIT} variable
-#############################################################################################
-function services_logs() {
+services_logs() {
   for service in ${SERVICES_SYSTEMD[@]}; do
     echo -----------------------------------------
     echo "${COLOR_GREEN}Check logs for systemd service: $service${COLOR_RESET}"
@@ -300,11 +191,11 @@ function services_logs() {
   done
 }
 
-function healthcheck_docker_installation() {
+healthcheck_docker_installation() {
 	exit 0
 }
 
-function healthcheck_curl {
+healthcheck_curl {
   url=${url:-"http://localhost"}
 
   healthcheck_res=$(wget --no-check-certificate -qO - ${url}/healthcheck)
@@ -318,7 +209,7 @@ function healthcheck_curl {
 }
 
 main() {
-  common::get_colors
+  get_colors
   prepare_vm
   check_hw
   install_docs
