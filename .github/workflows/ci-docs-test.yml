@@ -58,10 +58,6 @@ jobs:
             os: base-centos10
             name: "CentOS 10"
 
-          - distr: centos
-            os: stream10
-            name: "CentOS 10"
-
           - distr: bento
             os: amazonlinux-2023
             name: "Amazon Linux 2023"
