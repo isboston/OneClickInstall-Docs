@@ -155,7 +155,7 @@ EOF
 	  if [ "${TEST_REPO_ENABLE}" == 'true' ]; then
                yum-config-manager --add-repo https://s3.eu-west-1.amazonaws.com/repo-doc-onlyoffice-com/repo/centos/onlyoffice-dev-${VER}.repo
 	  fi
-	  fi
+  fi
 
   # Clean up home folder
   rm -rf /home/vagrant/*
