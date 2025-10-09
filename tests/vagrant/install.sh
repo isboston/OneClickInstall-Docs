@@ -25,11 +25,6 @@ get_colors() {
     COLOR_RED=$'\e[31m'
     COLOR_RESET=$'\e[0m'
     COLOR_YELLOW=$'\e[33m'
-    export COLOR_BLUE
-    export COLOR_GREEN
-    export COLOR_RED
-    export COLOR_RESET
-    export COLOR_YELLOW
 }
 
 check_hw() {
@@ -85,7 +80,7 @@ EOF
       fi
     fi
 	  if [ "${TEST_REPO_ENABLE}" == 'true' ]; then
-               yum-config-manager --add-repo https://s3.eu-west-1.amazonaws.com/repo-doc-onlyoffice-com/repo/centos/onlyoffice-dev-${VER}.repo
+      yum-config-manager --add-repo https://s3.eu-west-1.amazonaws.com/repo-doc-onlyoffice-com/repo/centos/onlyoffice-dev-${VER}.repo
 	  fi
   fi
 fi
@@ -97,8 +92,8 @@ fi
   fi
 
 
-  echo '127.0.0.1 host4test' | sudo tee -a /etc/hosts   
-  echo "${COLOR_GREEN}[OK] PREPARE_VM: Hostname was setting up${COLOR_RESET}"   
+  echo '127.0.0.1 host4test' | sudo tee -a /etc/hosts
+  echo "${COLOR_GREEN}[OK] PREPARE_VM: Hostname was setting up${COLOR_RESET}"
 
 }
 
@@ -195,7 +190,7 @@ healthcheck_docker_installation() {
 	exit 0
 }
 
-healthcheck_curl {
+healthcheck_curl () {
   url=${url:-"http://localhost"}
 
   healthcheck_res=$(wget --no-check-certificate -qO - ${url}/healthcheck)
