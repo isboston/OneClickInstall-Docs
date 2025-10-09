@@ -80,7 +80,7 @@ RABBIT_DIST_VER=$( [[ "$REV" == "10" ]] && echo "9" || echo "$REV" )
 ERLANG_DIST_NAME=$( [[ "$REV" == "10" ]] && echo "el" || echo "$DIST" )
 ERLANG_DIST_VER=$( [[ "$REV" == "10" ]] && echo "9" || echo "$REV" )
 
-# Temporary fix due to inaccessibility of repositories for CentOS 10
+# Temporary workaround for missing CentOS 10 repos
 if [ "$REV" = "10" ]; then
     yum -y install  https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/libXScrnSaver-1.2.3-10.el9.x86_64.rpm \
                     https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/xorg-x11-server-common-1.20.11-27.el9.x86_64.rpm \
