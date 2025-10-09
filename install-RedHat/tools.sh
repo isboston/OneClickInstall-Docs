@@ -83,7 +83,7 @@ ERLANG_DIST_VER=$( [[ "$REV" == "10" ]] && echo "9" || echo "$REV" )
 
 # Temporary workaround for missing CentOS 10 repos
 if [ "$REV" = "10" ]; then
-    yum -y install  https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/libXScrnSaver-1.2.3-10.el9.x86_64.rpm \
-                    https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/xorg-x11-server-common-1.20.11-27.el9.x86_64.rpm \
-                    https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/xorg-x11-server-Xvfb-1.20.11-27.el9.x86_64.rpm
+    yum -y install  "https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/$(curl -fsSL https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/ | grep -oE 'libXScrnSaver-[0-9][^"]+\.x86_64\.rpm' | sort -V | tail -1)" \
+                    "https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/$(curl -fsSL https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/ | grep -oE 'xorg-x11-server-common-[0-9][^"]+\.x86_64\.rpm' | sort -V | tail -1)" \
+                    "https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/$(curl -fsSL https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/ | grep -oE 'xorg-x11-server-Xvfb-[0-9][^"]+\.x86_64\.rpm' | sort -V | tail -1)"
 fi
