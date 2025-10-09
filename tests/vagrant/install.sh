@@ -20,11 +20,11 @@ export TERM=xterm-256color
 SERVICES_SYSTEMD=("ds-converter.service" "ds-docservice.service" "ds-metrics.service")
 
 get_colors() {
-    COLOR_BLUE=$'\e[34m'
-    COLOR_GREEN=$'\e[32m'
-    COLOR_RED=$'\e[31m'
-    COLOR_RESET=$'\e[0m'
-    COLOR_YELLOW=$'\e[33m'
+  COLOR_BLUE=$'\e[34m'
+  COLOR_GREEN=$'\e[32m'
+  COLOR_RED=$'\e[31m'
+  COLOR_RESET=$'\e[0m'
+  COLOR_YELLOW=$'\e[33m'
 }
 
 check_hw() {
@@ -35,11 +35,9 @@ check_hw() {
 prepare_vm() {
   if grep -qi 'debian\|ubuntu' /etc/os-release; then
 	if [ "${TEST_REPO_ENABLE}" == 'true' ]; then
-	    echo "deb [trusted=yes] https://s3.eu-west-1.amazonaws.com/repo-doc-onlyoffice-com/repo/debian stable ${VER}" | sudo tee /etc/apt/sources.list.d/onlyoffice-dev.list
+	  echo "deb [trusted=yes] https://s3.eu-west-1.amazonaws.com/repo-doc-onlyoffice-com/repo/debian stable ${VER}" | sudo tee /etc/apt/sources.list.d/onlyoffice-dev.list
 	fi
-
-  	[ -f /etc/os-release ] && [ "$(awk -F= '/^ID=/ {print $2}' /etc/os-release | tr -d '"')" == "debian" ] &&
-  	{ apt-get remove postfix -y; echo "${COLOR_GREEN}[OK] PREPARE_VM: Postfix was removed${COLOR_RESET}"; }
+    grep -qi '^ID=debian' /etc/os-release && { apt-get remove postfix -y; echo "${COLOR_GREEN}[OK] PREPARE_VM: Postfix was removed${COLOR_RESET}"; }
   fi
 
   if [ -f /etc/redhat-release ] || [ -f /etc/amazon-linux-release ]; then
@@ -86,21 +84,18 @@ EOF
 fi
   # Clean up home folder
   rm -rf /home/vagrant/*
-
   if [ -d /tmp/docs ]; then
     mv /tmp/docs/* /home/vagrant
   fi
 
-
   echo '127.0.0.1 host4test' | sudo tee -a /etc/hosts
   echo "${COLOR_GREEN}[OK] PREPARE_VM: Hostname was setting up${COLOR_RESET}"
-
 }
 
 install_docs() {
-    if ! command -v curl >/dev/null 2>&1; then
-        (command -v apt-get >/dev/null 2>&1 && apt-get update -y && apt-get install -y curl) || (command -v dnf >/dev/null 2>&1 && dnf install -y curl)
-    fi
+  if ! command -v curl >/dev/null 2>&1; then
+    (command -v apt-get >/dev/null 2>&1 && apt-get update -y && apt-get install -y curl) || (command -v dnf >/dev/null 2>&1 && dnf install -y curl)
+  fi
 
 	if [ "${DOWNLOAD_SCRIPTS}" == 'true' ]; then
     echo "${COLOR_BLUE}Downloading docs-install.sh...${COLOR_RESET}"
@@ -119,9 +114,7 @@ healthcheck_systemd_services() {
       SYSTEMD_SVC_FAILED="true"
     fi
   done
-}
 
-healthcheck_general_status() {
   if [ ! -z "${SYSTEMD_SVC_FAILED}" ]; then
     echo "${COLOR_YELLOW}[WARNING] ATTENTION: Some services is not running${COLOR_RESET}"
     exit 1
@@ -198,7 +191,6 @@ main() {
   healthcheck_curl
   services_logs
   healthcheck_systemd_services
-  healthcheck_general_status
 }
 
 main
