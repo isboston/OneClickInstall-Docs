@@ -108,13 +108,6 @@ install_docs() {
   fi
 
 	printf "N\nY\nY\nY" | bash docs-install.sh ${ARGUMENTS}
-
-	if [[ $? != 0 ]]; then
-	    echo "Exit code non-zero. Exit with 1."
-	    exit 1
-	else
-	    echo "Exit code 0. Continue..."
-	fi
 }
 
 healthcheck_systemd_services() {
@@ -136,52 +129,52 @@ healthcheck_general_status() {
 }
 
 services_logs() {
-  for service in ${SERVICES_SYSTEMD[@]}; do
+  for service in "${SERVICES_SYSTEMD[@]}"; do
     echo -----------------------------------------
     echo "${COLOR_GREEN}Check logs for systemd service: $service${COLOR_RESET}"
     echo -----------------------------------------
-    journalctl -u $service || true
+    journalctl -u "$service" --no-pager || true
   done
-  
+
   local MAIN_LOGS_DIR="/var/log/onlyoffice"
   local DOCS_LOGS_DIR="${MAIN_LOGS_DIR}/documentserver"
   local DOCSERVICE_LOGS_DIR="${DOCS_LOGS_DIR}/docservice"
   local CONVERTER_LOGS_DIR="${DOCS_LOGS_DIR}/converter"
   local METRICS_LOGS_DIR="${DOCS_LOGS_DIR}/metrics"
-       
-  ARRAY_DOCSERVICE_LOGS=($(ls ${DOCSERVICE_LOGS_DIR}))
-  ARRAY_CONVERTER_LOGS=($(ls ${CONVERTER_LOGS_DIR}))
-  ARRAY_METRICS_LOGS=($(ls ${METRICS_LOGS_DIR}))
-  
-  echo             "-----------------------------------"
+
+  shopt -s nullglob
+
+  echo "-----------------------------------"
   echo "${COLOR_YELLOW} Check logs for Docservice ${COLOR_RESET}"
-  echo             "-----------------------------------"
-  for file in ${ARRAY_DOCSERVICE_LOGS[@]}; do
+  echo "-----------------------------------"
+  for file in "${DOCSERVICE_LOGS_DIR}"/*; do
     echo ---------------------------------------
-    echo "${COLOR_GREEN}logs from file: ${file}${COLOR_RESET}"
+    echo "${COLOR_GREEN}logs from file: $(basename "$file")${COLOR_RESET}"
     echo ---------------------------------------
-    cat ${DOCSERVICE_LOGS_DIR}/${file} || true
+    cat "$file" || true
   done
-  
-  echo             "-----------------------------------"
+
+  echo "-----------------------------------"
   echo "${COLOR_YELLOW} Check logs for Converter ${COLOR_RESET}"
-  echo             "-----------------------------------"
-  for file in ${ARRAY_CONVERTER_LOGS[@]}; do
+  echo "-----------------------------------"
+  for file in "${CONVERTER_LOGS_DIR}"/*; do
     echo ---------------------------------------
-    echo "${COLOR_GREEN}logs from file ${file}${COLOR_RESET}"
+    echo "${COLOR_GREEN}logs from file $(basename "$file")${COLOR_RESET}"
     echo ---------------------------------------
-    cat ${CONVERTER_LOGS_DIR}/${file} || true
+    cat "$file" || true
   done
-  
-  echo             "-----------------------------------"
+
+  echo "-----------------------------------"
   echo "${COLOR_YELLOW} Start logs for Metrics ${COLOR_RESET}"
-  echo             "-----------------------------------"
-  for file in ${ARRAY_METRICS_LOGS[@]}; do
+  echo "-----------------------------------"
+  for file in "${METRICS_LOGS_DIR}"/*; do
     echo ---------------------------------------
-    echo "${COLOR_GREEN}logs from file ${file}${COLOR_RESET}"
+    echo "${COLOR_GREEN}logs from file $(basename "$file")${COLOR_RESET}"
     echo ---------------------------------------
-    cat ${METRICS_LOGS_DIR}/${file} || true
+    cat "$file" || true
   done
+
+  shopt -u nullglob
 }
 
 healthcheck_curl () {
