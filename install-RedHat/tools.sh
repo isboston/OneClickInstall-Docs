@@ -75,6 +75,7 @@ REV=$(sed -n 's/.*release\ \([0-9]*\).*/\1/p' /etc/redhat-release) || true
 DIST=${DIST:-$(awk -F= '/^ID=/ {gsub(/"/, "", $2); print tolower($2)}' /etc/os-release)}
 REV=${REV:-$(awk -F= '/^VERSION_ID=/ {gsub(/"/, "", $2); print tolower($2)}' /etc/os-release)}
 
+REDIS_PACKAGE=$( [[ "$REV" == "10" ]] && echo "valkey" || echo "redis" )
 RABBIT_DIST_NAME=$( [[ "$REV" == "10" ]] && echo "el" || echo "$DIST" )
 RABBIT_DIST_VER=$( [[ "$REV" == "10" ]] && echo "9" || echo "$REV" )
 ERLANG_DIST_NAME=$( [[ "$REV" == "10" ]] && echo "el" || echo "$DIST" )
