@@ -118,8 +118,7 @@ install_docs() {
 }
 
 healthcheck_systemd_services() {
-  for service in ${SERVICES_SYSTEMD[@]} 
-  do 
+  for service in ${SERVICES_SYSTEMD[@]}; do
     if systemctl is-active --quiet ${service}; then
       echo "${COLOR_GREEN}[OK] Service ${service} is running${COLOR_RESET}"
     else 
@@ -141,7 +140,6 @@ services_logs() {
     echo -----------------------------------------
     echo "${COLOR_GREEN}Check logs for systemd service: $service${COLOR_RESET}"
     echo -----------------------------------------
-    EXIT_CODE=0
     journalctl -u $service || true
   done
   
@@ -186,14 +184,9 @@ services_logs() {
   done
 }
 
-healthcheck_docker_installation() {
-	exit 0
-}
-
 healthcheck_curl () {
   url=${url:-"http://localhost"}
-
-  healthcheck_res=$(wget --no-check-certificate -qO - ${url}/healthcheck)
+  healthcheck_res=$(curl -fsSk "${url}/healthcheck" || true)
 
   if [[ $healthcheck_res == "true" ]]; then
     echo "Healthcheck passed."
