@@ -34,19 +34,26 @@ check_hw() {
 
 prepare_vm() {
   if grep -qi 'debian\|ubuntu' /etc/os-release; then
-	if [ "${TEST_REPO_ENABLE}" == 'true' ]; then
-	  echo "deb [trusted=yes] https://s3.eu-west-1.amazonaws.com/repo-doc-onlyoffice-com/repo/debian stable ${VER}" | sudo tee /etc/apt/sources.list.d/onlyoffice-dev.list
-	fi
+    if [ "${TEST_REPO_ENABLE:-}" = 'true' ]; then
+      echo "deb [trusted=yes] https://s3.eu-west-1.amazonaws.com/repo-doc-onlyoffice-com/repo/debian stable ${VER}" | sudo tee /etc/apt/sources.list.d/onlyoffice-dev.list
+    fi
+
     grep -qi '^ID=debian' /etc/os-release && { apt-get remove postfix -y; echo "${COLOR_GREEN}[OK] PREPARE_VM: Postfix was removed${COLOR_RESET}"; }
   fi
 
   if [ -f /etc/redhat-release ] || [ -f /etc/amazon-linux-release ]; then
-	  local REV=$(sed -E 's/[^0-9]+([0-9]+).*/\1/' /etc/redhat-release)
-	  if [ "$REV" != "10" ]; then
-	  if [[ "${REV}" =~ ^9 ]]; then
-		  update-crypto-policies --set LEGACY
-		  echo "${COLOR_GREEN}[OK] PREPARE_VM: sha1 gpg key check enabled${COLOR_RESET}"
-      cat <<EOF | sudo tee /etc/yum.repos.d/centos-stream-9.repo
+    local REV
+    if [ -f /etc/redhat-release ]; then
+      REV=$(sed -E 's/[^0-9]+([0-9]+).*/\1/' /etc/redhat-release)
+    else
+      REV=$(sed -E 's/[^0-9]+([0-9]+).*/\1/' /etc/amazon-linux-release)
+    fi
+
+    if [ "$REV" != "10" ]; then
+      if [[ "$REV" =~ ^9 ]]; then
+        update-crypto-policies --set LEGACY || true
+        echo "${COLOR_GREEN}[OK] PREPARE_VM: sha1 gpg key check enabled${COLOR_RESET}"
+        cat <<'EOF' | sudo tee /etc/yum.repos.d/centos-stream-9.repo >/dev/null
 [centos9s-baseos]
 name=CentOS Stream 9 - BaseOS
 baseurl=http://mirror.stream.centos.org/9-stream/BaseOS/x86_64/os/
@@ -59,11 +66,11 @@ baseurl=http://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/
 enabled=1
 gpgcheck=0
 EOF
-    else
-      if grep -qi 'centos' /etc/redhat-release; then
+      else
+        if grep -qi 'centos' /etc/redhat-release 2>/dev/null; then
           sudo sed -i 's|^mirrorlist=|#&|; s|^#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|' /etc/yum.repos.d/CentOS-*
-      elif [ "$REV" == "8" ]; then
-            cat <<EOF | sudo tee /etc/yum.repos.d/CentOS-Vault.repo
+        elif [ "$REV" = "8" ]; then
+          cat <<'EOF' | sudo tee /etc/yum.repos.d/CentOS-Vault.repo >/dev/null
 [BaseOS]
 name=CentOS-8 - Base
 baseurl=http://vault.centos.org/8.5.2111/BaseOS/x86_64/os/
@@ -75,13 +82,15 @@ baseurl=http://vault.centos.org/8.5.2111/AppStream/x86_64/os/
 gpgcheck=0
 enabled=1
 EOF
+        fi
+      fi
+
+      if [ "${TEST_REPO_ENABLE:-}" = 'true' ]; then
+        yum-config-manager --add-repo "https://s3.eu-west-1.amazonaws.com/repo-doc-onlyoffice-com/repo/centos/onlyoffice-dev-${VER}.repo"
       fi
     fi
-	  if [ "${TEST_REPO_ENABLE}" == 'true' ]; then
-      yum-config-manager --add-repo https://s3.eu-west-1.amazonaws.com/repo-doc-onlyoffice-com/repo/centos/onlyoffice-dev-${VER}.repo
-	  fi
   fi
-fi
+
   # Clean up home folder
   rm -rf /home/vagrant/*
   if [ -d /tmp/docs ]; then
