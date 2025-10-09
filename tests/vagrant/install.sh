@@ -117,6 +117,7 @@ function prepare_vm() {
 
   if [ -f /etc/redhat-release ] || [ -f /etc/amazon-linux-release ]; then
 	  local REV=$(sed -E 's/[^0-9]+([0-9]+).*/\1/' /etc/redhat-release)
+	  if [ "$REV" != "10" ]; then
 	  if [[ "${REV}" =~ ^9 ]]; then
 		  update-crypto-policies --set LEGACY
 		  echo "${COLOR_GREEN}[OK] PREPARE_VM: sha1 gpg key check enabled${COLOR_RESET}"
@@ -154,7 +155,7 @@ EOF
 	  if [ "${TEST_REPO_ENABLE}" == 'true' ]; then
                yum-config-manager --add-repo https://s3.eu-west-1.amazonaws.com/repo-doc-onlyoffice-com/repo/centos/onlyoffice-dev-${VER}.repo
 	  fi
-  # fi
+	  fi
 
   # Clean up home folder
   rm -rf /home/vagrant/*
