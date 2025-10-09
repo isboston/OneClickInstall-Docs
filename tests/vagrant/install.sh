@@ -6,9 +6,6 @@ while [ "$1" != "" ]; do
 	case $1 in
     -ds  | --download-scripts  ) [ -n "$2" ] && DOWNLOAD_SCRIPTS="$2"      && shift ;;
     -arg | --arguments         ) [ -n "$2" ] && ARGUMENTS="$2"             && shift ;;
-    -pi  | --production-install) [ -n "$2" ] && PRODUCTION_INSTALL="$2"    && shift ;;
-    -li  | --local-install     ) [ -n "$2" ] && LOCAL_INSTALL="$2"         && shift ;;
-    -lu  | --local-update      ) [ -n "$2" ] && LOCAL_UPDATE="$2"          && shift ;;
     -tr  | --test-repo         ) [ -n "$2" ] && TEST_REPO_ENABLE="$2"      && shift ;;
     -v   | --version           ) [ -n "$2" ] && VER="$2"                   && shift ;;
   esac
@@ -124,7 +121,10 @@ healthcheck_systemd_services() {
     fi
   done
 
-  [ -n "${SYSTEMD_SVC_FAILED:-}" ] && { echo "${COLOR_YELLOW}[WARNING] ATTENTION: Some services is not running${COLOR_RESET}"; exit 1; }
+  if [ ! -z "${SYSTEMD_SVC_FAILED}" ]; then
+    echo "${COLOR_YELLOW}[WARNING] ATTENTION: Some services is not running${COLOR_RESET}"
+    exit 1
+  fi
 }
 
 services_logs() {
@@ -176,8 +176,15 @@ services_logs() {
   shopt -u nullglob
 }
 
-healthcheck_curl() {
-  [[ "$(curl -fsSk "${url:-http://localhost}/healthcheck" || true)" == "true" ]] && echo "Healthcheck passed." || { echo "Healthcheck failed!"; exit 1; }
+healthcheck_curl () {
+  url=${url:-"http://localhost"}
+  healthcheck_res=$(curl -fsSk "${url}/healthcheck" || true)
+  if [[ $healthcheck_res == "true" ]]; then
+    echo "Healthcheck passed."
+  else
+    echo "Healthcheck failed!"
+    exit 1
+  fi
 }
 
 main() {
