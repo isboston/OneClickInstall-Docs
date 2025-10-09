@@ -124,10 +124,7 @@ healthcheck_systemd_services() {
     fi
   done
 
-  if [ ! -z "${SYSTEMD_SVC_FAILED}" ]; then
-    echo "${COLOR_YELLOW}[WARNING] ATTENTION: Some services is not running${COLOR_RESET}"
-    exit 1
-  fi
+  [ -n "${SYSTEMD_SVC_FAILED:-}" ] && { echo "${COLOR_YELLOW}[WARNING] ATTENTION: Some services is not running${COLOR_RESET}"; exit 1; }
 }
 
 services_logs() {
@@ -179,16 +176,8 @@ services_logs() {
   shopt -u nullglob
 }
 
-healthcheck_curl () {
-  url=${url:-"http://localhost"}
-  healthcheck_res=$(curl -fsSk "${url}/healthcheck" || true)
-
-  if [[ $healthcheck_res == "true" ]]; then
-    echo "Healthcheck passed."
-  else
-    echo "Healthcheck failed!"
-    exit 1
-  fi
+healthcheck_curl() {
+  [[ "$(curl -fsSk "${url:-http://localhost}/healthcheck" || true)" == "true" ]] && echo "Healthcheck passed." || { echo "Healthcheck failed!"; exit 1; }
 }
 
 main() {
