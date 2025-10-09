@@ -2,6 +2,9 @@ name: OneClickDocs-Update
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - bugfix/centos10
 
 jobs:
   get-version:
